@@ -23,7 +23,6 @@ setuptools.setup(
     version='0.0.3',
     packages=['argofloats'],
     url='https://github.com/samapriya/argofloats',
-    package_data={'': ['bundles.json']},
     install_requires=['requests>=2.24.0',
                       'area>=1.1.1',
                       'beautifulsoup4>=4.10.0',
