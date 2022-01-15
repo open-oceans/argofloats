@@ -1,4 +1,3 @@
-import geopandas as gpd
 import pandas as pd
 import json
 import requests
@@ -82,7 +81,7 @@ if str(platform.system().lower()) == "windows":
     except Exception as e:
         print(e)
     try:
-        import geopandas
+        import geopandas as gpd
     except ImportError:
         subprocess.call("pipwin install geopandas", shell=True)
     except Exception as e:
