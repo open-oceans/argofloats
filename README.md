@@ -3,6 +3,7 @@
 [![Twitter URL](https://img.shields.io/twitter/follow/samapriyaroy?style=social)](https://twitter.com/intent/follow?screen_name=samapriyaroy)
 [![Hits-of-Code](https://hitsofcode.com/github/samapriya/argofloats?branch=main)](https://hitsofcode.com/github/samapriya/argofloats?branch=main)
 [![CI argofloats](https://github.com/samapriya/argofloats/actions/workflows/CI.yml/badge.svg)](https://github.com/samapriya/argofloats/actions/workflows/CI.yml)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.5852639.svg)](https://doi.org/10.5281/zenodo.5852639)
 ![PyPI - License](https://img.shields.io/pypi/l/argofloats)
 ![PyPI](https://img.shields.io/pypi/v/argofloats)
 [![Downloads](https://pepy.tech/badge/argofloats/month)](https://pepy.tech/project/argofloats)
@@ -19,7 +20,8 @@ Disclaimer: This is an unofficial tool. It is created and maintained by Samapriy
 #### Tool Citation
 
 ```
-
+Samapriya Roy. (2022). samapriya/argofloats: Simple CLI for ArgoVis and Argofloats (0.0.3).
+Zenodo. https://doi.org/10.5281/zenodo.5852639
 ```
 
 
