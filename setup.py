@@ -20,7 +20,7 @@ def readme():
         return f.read()
 setuptools.setup(
     name='argofloats',
-    version='0.0.2',
+    version='0.0.3',
     packages=['argofloats'],
     url='https://github.com/samapriya/argofloats',
     package_data={'': ['bundles.json']},

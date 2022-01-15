@@ -6,6 +6,7 @@ import sys
 import subprocess
 import platform
 import os
+import time
 import math
 import argparse
 from area import area
@@ -87,6 +88,7 @@ if str(platform.system().lower()) == "windows":
     except Exception as e:
         print(e)
 
+
 class Solution:
     def compareVersion(self, version1, version2):
         versions1 = [int(v) for v in version1.split(".")]
@@ -144,7 +146,7 @@ def argofloats_version():
         )
 
 
-#argofloats_version()
+argofloats_version()
 
 headers = {
     "Connection": "keep-alive",
@@ -161,12 +163,14 @@ headers = {
     "Accept-Language": "en-US,en;q=0.9",
 }
 
-profile_list =[]
+profile_list = []
 
 ################################################ Date block #################################################################
 
+
 def numOfDays(date1, date2):
     return (date2 - date1).days
+
 
 def getarea(geom):
     obj = {"type": "Polygon", "coordinates": []}
@@ -174,8 +178,10 @@ def getarea(geom):
     poly_area = area(obj)
     return poly_area / 1000000
 
+
 def date_range(start, end):
     from datetime import datetime
+
     start = datetime.strptime(start, "%Y-%m-%d")
     end = datetime.strptime(end, "%Y-%m-%d")
     days = numOfDays(start, end)
@@ -184,6 +190,7 @@ def date_range(start, end):
     for i in range(intv):
         yield (start + diff * i).strftime("%Y-%m-%dT%H:%M:%SZ")
     yield end.strftime("%Y-%m-%dT%H:%M:%SZ")
+
 
 # point to square buffer function
 def generate_buffer_meter(lat, lng, radius):
@@ -199,93 +206,107 @@ def generate_buffer_meter(lat, lng, radius):
     coord = bound["features"][0]["geometry"]["coordinates"]
     return coord
 
+
 ######################### Profile Map find all profile ids for give aoi and time ################################
-@retry(
-    wait=wait_exponential(multiplier=1, min=4, max=10),
-    stop=stop_after_attempt(4)
-)
+@retry(wait=wait_exponential(multiplier=1, min=4, max=10), stop=stop_after_attempt(4))
 def profile_id(params):
-    response = requests.get('https://argovis.colorado.edu/selection/profiles/map', headers=headers, params=params)
-    if response.status_code == 200 and len(response.json())>0:
+    response = requests.get(
+        "https://argovis.colorado.edu/selection/profiles/map",
+        headers=headers,
+        params=params,
+    )
+    if response.status_code == 200 and len(response.json()) > 0:
         for items in response.json():
-            profile_list.append(items['_id'])
+            profile_list.append(items["_id"])
         return profile_list
     elif response.status_code != 200:
         raise Exception
 
+
 ######################### Profile measurements and exporter ################################
-@retry(
-    wait=wait_exponential(multiplier=1, min=4, max=10),
-    stop=stop_after_attempt(2)
-)
-def profiler(plid,fpath):
+@retry(wait=wait_exponential(multiplier=1, min=4, max=10), stop=stop_after_attempt(2))
+def profiler(plid, fpath):
     pf = requests.get(f"https://argovis.colorado.edu/catalog/profiles/{plid}")
-    if pf.status_code==200:
+    if pf.status_code == 200:
         profile = pf.json()
-        meas_keys = profile['measurements'][0].keys()
+        meas_keys = profile["measurements"][0].keys()
         df = pd.DataFrame(columns=meas_keys)
-        profileDf = pd.DataFrame(profile['measurements'])
-        profileDf['cycle_number'] = profile['cycle_number']
-        profileDf['profile_id'] = profile['_id']
-        profileDf['latitude'] = profile['lat']
-        profileDf['longitude'] = profile['lon']
-        profileDf['date'] = profile['date']
+        profileDf = pd.DataFrame(profile["measurements"])
+        profileDf["cycle_number"] = profile["cycle_number"]
+        profileDf["profile_id"] = profile["_id"]
+        profileDf["latitude"] = profile["lat"]
+        profileDf["longitude"] = profile["lon"]
+        profileDf["date"] = profile["date"]
         df = pd.concat([df, profileDf], sort=False)
-        filepath = os.path.join(fpath,f'argoprofile_{plid}.csv')
+        filepath = os.path.join(fpath, f"argoprofile_{plid}.csv")
         print(f"Exporting to {filepath}")
         df.to_csv(filepath, index=False)
     elif response.status_code != 200:
         raise Exception
 
+
 def overview():
-    response = requests.get('https://argovis.colorado.edu/selection/overview', headers=headers)
+    response = requests.get(
+        "https://argovis.colorado.edu/selection/overview", headers=headers
+    )
     if response.status_code == 200:
-        print(json.dumps(response.json(),indent=2))
+        print(json.dumps(response.json(), indent=2))
     else:
-        print(f'Overview failed with error code {response.status_code}')
+        print(f"Overview failed with error code {response.status_code}")
+
 
 def overview_from_parser(args):
     overview()
 
+
 def platform_metadata(pid):
-    response = requests.get(f'https://argovis.colorado.edu/catalog/platform_metadata/{pid}', headers=headers)
+    response = requests.get(
+        f"https://argovis.colorado.edu/catalog/platform_metadata/{pid}", headers=headers
+    )
     if response.status_code == 200:
-        print(json.dumps(response.json(),indent=2))
+        print(json.dumps(response.json(), indent=2))
     else:
-        print(f'Failed with error code {response.status_code}')
+        print(f"Failed with error code {response.status_code}")
+
 
 def pm_from_parser(args):
     platform_metadata(pid=args.pid)
 
+
 def platform_profile_metadata(plid):
-    response = requests.get(f'https://argovis.colorado.edu/catalog/platform_profile_metadata/{plid}', headers=headers)
+    response = requests.get(
+        f"https://argovis.colorado.edu/catalog/profiles/{plid}/map", headers=headers
+    )
     if response.status_code == 200:
-        print(json.dumps(response.json(),indent=2))
+        print(json.dumps(response.json(), indent=2))
     else:
-        print(f'Failed with error code {response.status_code}')
+        print(f"Failed with error code {response.status_code}")
+
 
 def plm_from_parser(args):
     platform_metadata(plid=args.plid)
 
-def argoexp(lat, lng, radius, start, end,geometry,fpath,plid):
-    print(lat, lng, radius, start, end,geometry,fpath,plid)
+
+def argoexp(lat, lng, radius, start, end, geometry, fpath, plid):
     if geometry is not None:
         with open(geometry) as f:
             gj = geojson.load(f)
-        shp = gj['features'][0]['geometry']['coordinates']
-        ar = round(getarea(shp),2)
-        ar = '{:,}'.format(ar)
+        shp = gj["features"][0]["geometry"]["coordinates"]
+        ar = round(getarea(shp), 2)
+        ar = "{:,}".format(ar)
         print(f"Processing {os.path.basename(geometry)} with area {ar} square km")
     elif plid is not None:
-        profiler(plid,fpath)
+        profiler(plid, fpath)
         print(f"Processing for Platform Profile ID {plid}")
     elif lat is not None and lng is not None:
         if radius is None:
-            radius = 100000
+            radius = 1000000
+        elif radius is not None:
+            radius = float(radius) * 1000
         shp = generate_buffer_meter(float(lat), float(lng), float(radius))
         print(f"Processing for {float(radius)/1000} km around {lat},{lng}")
     else:
-        sys.exit('Please provie lat long pair or full path to geometry.geojson file')
+        sys.exit("Please provie lat long pair or full path to geometry.geojson file")
     if start is not None and end is not None:
         dates = date_range(start, end)
         dates = list(dates)
@@ -301,19 +322,31 @@ def argoexp(lat, lng, radius, start, end,geometry,fpath,plid):
             profile_id(params)
         if profile_list:
             for plid in profile_list:
-                profiler(plid,fpath)
+                profiler(plid, fpath)
     if plid is None and start is None and end is None:
-        print('Provide start and end dates for Geometry or point searches')
+        print("Provide start and end dates for Geometry or point searches")
+
 
 def argoexp_from_parser(args):
-    argoexp(lat=args.lat, lng=args.lon, radius=args.radius, start=args.start, end=args.end,geometry=args.geometry,fpath=args.path,plid=args.plid)
+    argoexp(
+        lat=args.lat,
+        lng=args.lon,
+        radius=args.radius,
+        start=args.start,
+        end=args.end,
+        geometry=args.geometry,
+        fpath=args.path,
+        plid=args.plid,
+    )
 
 
 def main(args=None):
     parser = argparse.ArgumentParser(description="Simple CLI for ArgoVis & Argofloats")
     subparsers = parser.add_subparsers()
 
-    parser_overview = subparsers.add_parser("overview", help="Get overview of platforms and profiles")
+    parser_overview = subparsers.add_parser(
+        "overview", help="Get overview of platforms and profiles"
+    )
     parser_overview.set_defaults(func=overview_from_parser)
 
     parser_pm = subparsers.add_parser("pm", help="Get Platform metadata")
@@ -326,19 +359,27 @@ def main(args=None):
     required_named.add_argument("--plid", help="Platform Profile ID", required=True)
     parser_plm.set_defaults(func=plm_from_parser)
 
-    parser_argoexp = subparsers.add_parser("profile-export", help="Export profile based on Platform Profile ID, Lat, Long or Geometry GeoJSON file")
+    parser_argoexp = subparsers.add_parser(
+        "profile-export",
+        help="Export profile based on Platform Profile ID, Lat, Long or Geometry GeoJSON file",
+    )
     required_named = parser_argoexp.add_argument_group("Required named arguments.")
-    required_named.add_argument("--path", help="Full path to export platform profile CSV", required=True)
+    required_named.add_argument(
+        "--path", help="Full path to export platform profile CSV", required=True
+    )
     optional_named = parser_argoexp.add_argument_group("Optional named arguments")
-    optional_named.add_argument("--lat", help="Latitude",type=float, default=None)
-    optional_named.add_argument("--lon", help="Longitude",type=float, default=None)
-    optional_named.add_argument("--radius", help="Search radius in meters for square buffer", default=None)
+    optional_named.add_argument("--lat", help="Latitude", type=float, default=None)
+    optional_named.add_argument("--lon", help="Longitude", type=float, default=None)
+    optional_named.add_argument(
+        "--radius", help="Search radius in meters for square buffer", default=None
+    )
     optional_named.add_argument("--start", help="Start Date YYYY-MM-DD", default=None)
     optional_named.add_argument("--end", help="End Date YYYY-MM-DD", default=None)
     optional_named.add_argument("--plid", help="Platform Profile ID", default=None)
-    optional_named.add_argument("--geometry", help="Full path to geometry.geojson file", default=None)
+    optional_named.add_argument(
+        "--geometry", help="Full path to geometry.geojson file", default=None
+    )
     parser_argoexp.set_defaults(func=argoexp_from_parser)
-
 
     args = parser.parse_args()
 
