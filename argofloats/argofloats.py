@@ -3,6 +3,7 @@ import json
 import requests
 import geojson
 import sys
+import pkg_resources
 import subprocess
 import platform
 import os
