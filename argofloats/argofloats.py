@@ -85,9 +85,10 @@ if str(platform.system().lower()) == "windows":
     try:
         import geopandas as gpd
     except ImportError:
-        subprocess.call("pipwin install geopandas", shell=True)
+        subprocess.call("pip install geopandas", shell=True)
     except Exception as e:
         print(e)
+import geopandas as gpd
 
 
 class Solution:
@@ -173,13 +174,6 @@ def numOfDays(date1, date2):
     return (date2 - date1).days
 
 
-def getarea(geom):
-    obj = {"type": "Polygon", "coordinates": []}
-    obj["coordinates"] = geom
-    poly_area = area(obj)
-    return poly_area / 1000000
-
-
 def date_range(start, end):
     from datetime import datetime
 
@@ -191,6 +185,14 @@ def date_range(start, end):
     for i in range(intv):
         yield (start + diff * i).strftime("%Y-%m-%dT%H:%M:%SZ")
     yield end.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+######################################################geometry block ################################################################################
+def getarea(geom):
+    obj = {"type": "Polygon", "coordinates": []}
+    obj["coordinates"] = geom
+    poly_area = area(obj)
+    return poly_area / 1000000
 
 
 # point to square buffer function
@@ -244,6 +246,49 @@ def profiler(plid, fpath):
         df.to_csv(filepath, index=False)
     elif response.status_code != 200:
         raise Exception
+
+
+################################### Export all profiles per platform #################################################################
+@retry(wait=wait_exponential(multiplier=1, min=4, max=10), stop=stop_after_attempt(2))
+def profile_catalog(pid):
+    url = f"https://argovis.colorado.edu/catalog/platforms/{pid}"
+    resp = requests.get(url)
+    if not resp.status_code == 200:
+        raise Exception
+    elif resp.status_code == 200:
+        platformProfiles = resp.json()
+    return platformProfiles
+
+
+def get_profiles(profiles):
+    meas_keys = profiles[0]["measurements"][0].keys()
+    df = pd.DataFrame(columns=meas_keys)
+    for profile in profiles:
+        profileDf = pd.DataFrame(profile["measurements"])
+        profileDf["cycle_number"] = profile["cycle_number"]
+        profileDf["profile_id"] = profile["_id"]
+        profileDf["latitude"] = profile["lat"]
+        profileDf["longitude"] = profile["lon"]
+        profileDf["date"] = profile["date"]
+        df = pd.concat([df, profileDf], sort=False)
+    return df
+
+
+def platform2profiles(pid, fpath):
+    if fpath is None:
+        fpath = expanduser("~")
+    profiles = profile_catalog(pid)
+    pidf = get_profiles(profiles)
+    platform_counts = pidf["profile_id"].nunique()
+    print(f"Total unique profiles: {platform_counts}")
+    print(f"Total measurements: {pidf.shape[0]}")
+    filepath = os.path.join(fpath, f"all_profiles-{pid}.csv")
+    print(f"Exporting to {filepath}")
+    pidf.to_csv(filepath, index=False)
+
+
+def platform2profiles_from_parser(args):
+    platform2profiles(pid=args.pid, fpath=args.path)
 
 
 def overview():
@@ -360,13 +405,32 @@ def main(args=None):
     required_named.add_argument("--plid", help="Platform Profile ID", required=True)
     parser_plm.set_defaults(func=plm_from_parser)
 
+    parser_platform2profiles = subparsers.add_parser(
+        "platform-profiles", help="Export all profiles for a given platform"
+    )
+    required_named = parser_platform2profiles.add_argument_group(
+        "Required named arguments."
+    )
+    required_named.add_argument("--pid", help="Platform ID", required=True)
+    optional_named = parser_platform2profiles.add_argument_group(
+        "Optional named arguments"
+    )
+    optional_named.add_argument(
+        "--path",
+        help="Full path to folder to export platform profiles CSV",
+        default=None,
+    )
+    parser_platform2profiles.set_defaults(func=platform2profiles_from_parser)
+
     parser_argoexp = subparsers.add_parser(
         "profile-export",
         help="Export profile based on Platform Profile ID, Lat, Long or Geometry GeoJSON file",
     )
     required_named = parser_argoexp.add_argument_group("Required named arguments.")
     required_named.add_argument(
-        "--path", help="Full path to export platform profile CSV", required=True
+        "--path",
+        help="Full path to folder to export platform profile CSVs",
+        required=True,
     )
     optional_named = parser_argoexp.add_argument_group("Optional named arguments")
     optional_named.add_argument("--lat", help="Latitude", type=float, default=None)

@@ -41,3 +41,4 @@ jobs:
       run: |
         python setup.py install
         argofloats -h
+        argofloats platform-profiles --pid 2902755

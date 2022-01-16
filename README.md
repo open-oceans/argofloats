@@ -56,6 +56,7 @@ Readme Docs [available online](https://samapriya.github.io/argofloats)
     * [overview](#overview)
     * [Platform Metadata](#platform-metadata)
     * [Profile Metadata](#profile-metadata)
+    * [Platform Profiles](#platform-profiles)
     * [Profile Export](#profile-export)
 
 ## Installation
@@ -121,17 +122,18 @@ As usual, to print help:
 
 ```
 argofloats -h
-usage: argofloats [-h] {overview,pm,plm,profile-export} ...
+usage: argofloats [-h] {overview,pm,plm,platform-profiles,profile-export} ...
 
 Simple CLI for ArgoVis & Argofloats
 
 positional arguments:
-  {overview,pm,plm,profile-export}
+  {overview,pm,plm,platform-profiles,profile-export}
     overview            Get overview of platforms and profiles
     pm                  Get Platform metadata
     plm                 Get Platform Profile metadata
-    profile-export      Export profile based on Platform Profile ID, Lat, Long
-                        or Geometry GeoJSON file
+    platform-profiles   Export all profiles for a given platform
+    profile-export      Export profile based on Platform Profile ID, Lat, Long or
+                        Geometry GeoJSON file
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -158,6 +160,11 @@ Each platform consists of profiles where each profile is attached to a platform 
 
 ![argofloats_plm](https://user-images.githubusercontent.com/6677629/149610501-18fb7d24-e1d5-4aa3-a6d3-0164a845c26b.gif)
 
+### Platform Profiles
+Each platform consists of profiles where each profile is attached to a platform and is a single cycle of data collection. So platforms can have multiple profiles and generally represented as PlatformID_ProfileNo. This tool fetches all platforms linked to a specific platform and exports it as a single CSV including platform profile id and measurements. If no path is provided the profile CSV is saved onto the home folder.
+
+![platform_profiles](https://user-images.githubusercontent.com/6677629/149677824-590bd4ec-252e-47bd-bd04-07720dba86b5.gif)
+
 ### Profile Export
 This tool allows you to search the argo floats database using either a lat long and a buffer area , or a geometry.geojson file or a given profile id. This tool is also capable to running long time searches overcoming the 3 month limit constrained by the argovis API. All use cases are shown below. The outputs are written as CSV file with a prefix argoprofile_
 
@@ -177,6 +184,11 @@ This makes uses of a geojson file along with start and end date and exports all 
 ![argofloats_export_geom](https://user-images.githubusercontent.com/6677629/149610496-f188d470-97e5-48bc-add6-5e55175b79ce.gif)
 
 ### Changelog
+
+#### v0.0.4
+- Fixed relative import of geopandas.
+- Added platform profiles export tool.
+- Minor general improvements.
 
 #### v0.0.3
 - Added readme to the overall tool.

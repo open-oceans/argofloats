@@ -20,7 +20,7 @@ def readme():
         return f.read()
 setuptools.setup(
     name='argofloats',
-    version='0.0.3',
+    version='0.0.4',
     packages=['argofloats'],
     url='https://github.com/samapriya/argofloats',
     install_requires=['requests>=2.24.0',
@@ -30,15 +30,15 @@ setuptools.setup(
                       'tenacity>=8.0.1',
                       'pandas>=1.3.5',
                       'pyproj>=1.9.5.1;platform_system!="Windows"',
-                      'shapely>=1.6.4;platform_system!="Windows"',
-                      'fiona>=1.8.6;platform_system!="Windows"',
-                      'geopandas>=0.5.0;platform_system!="Windows"'
+                      'shapely>=1.7.1;platform_system!="Windows"',
+                      'fiona>=1.8.20;platform_system!="Windows"',
+                      'geopandas>=0.9.0;platform_system!="Windows"'
                       ],
     license='Apache 2.0',
     long_description=open('README.md').read(),
     long_description_content_type='text/markdown',
     python_requires='>=3.4',
-    classifiers=(
+    classifiers=[
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
         'Intended Audience :: Science/Research',
@@ -49,7 +49,7 @@ setuptools.setup(
         'Programming Language :: Python :: 3.8',
         'Operating System :: OS Independent',
         'Topic :: Scientific/Engineering :: GIS',
-    ),
+    ],
     author='Samapriya Roy',
     author_email='samapriya.roy@gmail.com',
     description='Simple CLI for ArgoVis & Argofloats',
