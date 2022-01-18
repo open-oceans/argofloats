@@ -10,6 +10,7 @@ import os
 import time
 import math
 import argparse
+import webbrowser
 from area import area
 from os.path import expanduser
 from tenacity import retry, stop_after_attempt, wait_exponential
@@ -149,6 +150,21 @@ def argofloats_version():
 
 
 argofloats_version()
+
+
+# Go to the readMe
+def readme():
+    try:
+        a = webbrowser.open("https://samapriya.github.io/argofloats/", new=2)
+        if a == False:
+            print("Your setup does not have a monitor to display the webpage: go to https://samapriya.github.io/argofloats/")
+    except Exception as e:
+        print(e)
+
+
+def read_from_parser(args):
+    readme()
+
 
 headers = {
     "Connection": "keep-alive",
@@ -389,6 +405,11 @@ def argoexp_from_parser(args):
 def main(args=None):
     parser = argparse.ArgumentParser(description="Simple CLI for ArgoVis & Argofloats")
     subparsers = parser.add_subparsers()
+
+    parser_read = subparsers.add_parser(
+        "readme", help="Go the web based porder readme page"
+    )
+    parser_read.set_defaults(func=read_from_parser)
 
     parser_overview = subparsers.add_parser(
         "overview", help="Get overview of platforms and profiles"

@@ -185,6 +185,10 @@ This makes uses of a geojson file along with start and end date and exports all 
 
 ### Changelog
 
+#### v0.0.5
+- Added readme tool to open in browser
+
+
 #### v0.0.4
 - Fixed relative import of geopandas.
 - Added platform profiles export tool.
