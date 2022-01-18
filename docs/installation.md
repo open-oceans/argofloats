@@ -41,7 +41,7 @@ Also for Ubuntu Linux I saw that this is necessary before the install
 
 **This also needs earthengine cli to be [installed and authenticated on your system](https://developers.google.com/earth-engine/python_install_manual) and earthengine to be callable in your command line or terminal**
 
-To install **argofloats: Simple CLI for Earth Engine Uploads** you can install using two methods.
+To install **argofloats: Simple CLI for ArgoVis and Argofloats** you can install using two methods.
 
 ```pip install argofloats```
 
@@ -67,10 +67,12 @@ usage: argofloats [-h] {overview,pm,plm,profile-export} ...
 Simple CLI for ArgoVis & Argofloats
 
 positional arguments:
-  {overview,pm,plm,profile-export}
+  {readme,overview,pm,plm,platform-profiles,profile-export}
+    readme              Go the web based porder readme page
     overview            Get overview of platforms and profiles
     pm                  Get Platform metadata
     plm                 Get Platform Profile metadata
+    platform-profiles   Export all profiles for a given platform
     profile-export      Export profile based on Platform Profile ID, Lat, Long
                         or Geometry GeoJSON file
 
