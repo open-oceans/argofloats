@@ -39,8 +39,6 @@ Also for Ubuntu Linux I saw that this is necessary before the install
 
 ```sudo apt install libcurl4-openssl-dev libssl-dev```
 
-**This also needs earthengine cli to be [installed and authenticated on your system](https://developers.google.com/earth-engine/python_install_manual) and earthengine to be callable in your command line or terminal**
-
 To install **argofloats: Simple CLI for ArgoVis and Argofloats** you can install using two methods.
 
 ```pip install argofloats```
