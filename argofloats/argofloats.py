@@ -157,7 +157,9 @@ def readme():
     try:
         a = webbrowser.open("https://samapriya.github.io/argofloats/", new=2)
         if a == False:
-            print("Your setup does not have a monitor to display the webpage: go to https://samapriya.github.io/argofloats/")
+            print(
+                "Your setup does not have a monitor to display the webpage: go to https://samapriya.github.io/argofloats/"
+            )
     except Exception as e:
         print(e)
 
@@ -245,23 +247,29 @@ def profile_id(params):
 ######################### Profile measurements and exporter ################################
 @retry(wait=wait_exponential(multiplier=1, min=4, max=10), stop=stop_after_attempt(2))
 def profiler(plid, fpath):
-    pf = requests.get(f"https://argovis.colorado.edu/catalog/profiles/{plid}")
-    if pf.status_code == 200:
-        profile = pf.json()
-        meas_keys = profile["measurements"][0].keys()
-        df = pd.DataFrame(columns=meas_keys)
-        profileDf = pd.DataFrame(profile["measurements"])
-        profileDf["cycle_number"] = profile["cycle_number"]
-        profileDf["profile_id"] = profile["_id"]
-        profileDf["latitude"] = profile["lat"]
-        profileDf["longitude"] = profile["lon"]
-        profileDf["date"] = profile["date"]
-        df = pd.concat([df, profileDf], sort=False)
-        filepath = os.path.join(fpath, f"argoprofile_{plid}.csv")
-        print(f"Exporting to {filepath}")
-        df.to_csv(filepath, index=False)
-    elif response.status_code != 200:
-        raise Exception
+    filepath = os.path.join(fpath, f"argoprofile_{plid}.csv")
+    if not os.path.exists(filepath):
+        pf = requests.get(f"https://argovis.colorado.edu/catalog/profiles/{plid}")
+        if pf.status_code == 200:
+            profile = pf.json()
+            meas_keys = profile["measurements"][0].keys()
+            df = pd.DataFrame(columns=meas_keys)
+            profileDf = pd.DataFrame(profile["measurements"])
+            profileDf["cycle_number"] = profile["cycle_number"]
+            profileDf["profile_id"] = profile["_id"]
+            profileDf["latitude"] = profile["lat"]
+            profileDf["longitude"] = profile["lon"]
+            profileDf["date"] = profile["date"]
+            df = pd.concat([df, profileDf], sort=False)
+            try:
+                print(f"Exporting to {filepath}")
+                df.to_csv(filepath, index=False)
+            except Exception as e:
+                print(e)
+        elif response.status_code != 200:
+            raise Exception
+    else:
+        print(f"File already exists SKIPPING: {os.path.basename(filepath)}")
 
 
 ################################### Export all profiles per platform #################################################################
@@ -385,6 +393,8 @@ def argoexp(lat, lng, radius, start, end, geometry, fpath, plid):
         if profile_list:
             for plid in profile_list:
                 profiler(plid, fpath)
+        else:
+            print("\n" + "No matching profiles found for query")
     if plid is None and start is None and end is None:
         print("Provide start and end dates for Geometry or point searches")
 

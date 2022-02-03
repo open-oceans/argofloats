@@ -184,6 +184,11 @@ This makes uses of a geojson file along with start and end date and exports all 
 
 ### Changelog
 
+#### v0.0.6
+- Improved error handling
+- Better readout if search yields nothing
+- General improvements & file skipping if exists
+
 #### v0.0.5
 - Added readme tool to open in browser
 
