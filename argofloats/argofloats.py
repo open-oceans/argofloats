@@ -221,7 +221,8 @@ def generate_buffer_meter(lat, lng, radius):
     data = pd.DataFrame({"Longitude": [lng], "Latitude": [lat]})
     data = gpd.GeoDataFrame(
         data,
-        geometry=gpd.points_from_xy(data.Longitude, data.Latitude, crs="epsg:4326"),
+        geometry=gpd.points_from_xy(
+            data.Longitude, data.Latitude, crs="epsg:4326"),
     )
     data = data.to_crs("+proj=aeqd +units=m  +x_0=0 +y_0=0")
     data["geometry"] = data["geometry"].buffer(radius, cap_style=3)
@@ -252,16 +253,20 @@ def parse_meta_into_df(profiles):
 
 
 def global_profiles(fpath, start, end, pid, bgc):
-    key_list = {"pid": "platform_number", "bgc": "containsBGC"}
+    key_list = {"pid": "platform_number",
+                "bgc": "containsBGC", "allprofiles": "all"}
     if pid is not None:
         key = "pid"
         value = int(pid)
     elif bgc is not None:
         key = "bgc"
         value = bool(bgc)
-    if key in key_list:
+    elif pid is None and bgc is None:
+        key = "allprofiles"
+        value = "allprofiles"
+    if key is not None and key in key_list:
         keyword = key_list[key]
-    else:
+    elif key is not None and key not in key_list:
         sys.exit(f"Key {key} not found")
 
     start = "-".join(start.split("-")[0:2])
@@ -275,10 +280,15 @@ def global_profiles(fpath, start, end, pid, bgc):
         metaDf = parse_meta_into_df(metaProfiles)
         dict = {"lat": "latitude", "lon": "longitude"}
         metaDf.rename(columns=dict, inplace=True)
-        metaDf_sorted = metaDf.loc[metaDf[keyword] == value]
-        filepath = os.path.join(fpath, f"global_{year}_{month}_{keyword}-{value}.csv")
+        if keyword is not None and keyword != "all":
+            metaDf_sorted = metaDf.loc[metaDf[keyword] == value]
+        else:
+            metaDf_sorted = metaDf
+        filepath = os.path.join(
+            fpath, f"global_{year}_{month}_{keyword}-{value}.csv")
         if metaDf_sorted.size > 0:
-            print(f"Exporting global search within {period} to {filepath}")
+            print(
+                f"Exporting global search within {period} to {filepath}")
             metaDf_sorted.to_csv(filepath, index=False)
 
 
@@ -311,7 +321,8 @@ def profile_id(params):
 def profiler_bgc(plid, fpath):
     filepath = os.path.join(fpath, f"argoprofile_bgc_{plid}.csv")
     if not os.path.exists(filepath):
-        pf = requests.get(f"https://argovis.colorado.edu/catalog/profiles/{plid}")
+        pf = requests.get(
+            f"https://argovis.colorado.edu/catalog/profiles/{plid}")
         if pf.status_code == 200:
             profile = pf.json()
             bgc_keys = profile["bgcMeas"][0].keys()
@@ -338,7 +349,8 @@ def profiler_bgc(plid, fpath):
 def profiler(plid, fpath):
     filepath = os.path.join(fpath, f"argoprofile_core_{plid}.csv")
     if not os.path.exists(filepath):
-        pf = requests.get(f"https://argovis.colorado.edu/catalog/profiles/{plid}")
+        pf = requests.get(
+            f"https://argovis.colorado.edu/catalog/profiles/{plid}")
         if pf.status_code == 200:
             profile = pf.json()
             meas_keys = profile["measurements"][0].keys()
@@ -481,7 +493,8 @@ def argoexp(lat, lng, radius, start, end, geometry, fpath, plid):
         shp = gj["features"][0]["geometry"]["coordinates"]
         ar = round(getarea(shp), 2)
         ar = "{:,}".format(ar)
-        print(f"Processing {os.path.basename(geometry)} with area {ar} square km")
+        print(
+            f"Processing {os.path.basename(geometry)} with area {ar} square km")
     elif plid is not None:
         print(f"Processing for Platform Profile ID {plid}" + "\n")
         profiler(plid, fpath)
@@ -522,7 +535,8 @@ def argoexp(lat, lng, radius, start, end, geometry, fpath, plid):
                 try:
                     profiler(plid, fpath)
                 except tenacity.RetryError as e:
-                    print(f"Retry failed for Core Platform Profile: with ID {plid}")
+                    print(
+                        f"Retry failed for Core Platform Profile: with ID {plid}")
 
                 """Check to see if profile is BGC and get BGC keys"""
                 platform_url = f"https://argovis.colorado.edu/catalog/platforms/{plid.split('_')[0]}"
@@ -537,7 +551,8 @@ def argoexp(lat, lng, radius, start, end, geometry, fpath, plid):
                     try:
                         profiler_bgc(plid, fpath)
                     except tenacity.RetryError as e:
-                        print(f"Retry failed for BGC Platform Profile: with ID {plid}")
+                        print(
+                            f"Retry failed for BGC Platform Profile: with ID {plid}")
         else:
             print("\n" + "No matching profiles found for query")
     if plid is None and start is None and end is None:
@@ -558,7 +573,8 @@ def argoexp_from_parser(args):
 
 
 def main(args=None):
-    parser = argparse.ArgumentParser(description="Simple CLI for ArgoVis & Argofloats")
+    parser = argparse.ArgumentParser(
+        description="Simple CLI for ArgoVis & Argofloats")
     subparsers = parser.add_subparsers()
 
     parser_read = subparsers.add_parser(
@@ -576,9 +592,11 @@ def main(args=None):
     required_named.add_argument("--pid", help="Platform ID", required=True)
     parser_pm.set_defaults(func=pm_from_parser)
 
-    parser_plm = subparsers.add_parser("plm", help="Get Platform Profile metadata")
+    parser_plm = subparsers.add_parser(
+        "plm", help="Get Platform Profile metadata")
     required_named = parser_plm.add_argument_group("Required named arguments.")
-    required_named.add_argument("--plid", help="Platform Profile ID", required=True)
+    required_named.add_argument(
+        "--plid", help="Platform Profile ID", required=True)
     parser_plm.set_defaults(func=plm_from_parser)
 
     parser_global_profiles = subparsers.add_parser(
@@ -633,21 +651,28 @@ def main(args=None):
         "profile-export",
         help="Export profile based on Platform Profile ID, Lat, Long or Geometry GeoJSON file",
     )
-    required_named = parser_argoexp.add_argument_group("Required named arguments.")
+    required_named = parser_argoexp.add_argument_group(
+        "Required named arguments.")
     required_named.add_argument(
         "--path",
         help="Full path to folder to export platform profile CSVs",
         required=True,
     )
-    optional_named = parser_argoexp.add_argument_group("Optional named arguments")
-    optional_named.add_argument("--lat", help="Latitude", type=float, default=None)
-    optional_named.add_argument("--lon", help="Longitude", type=float, default=None)
+    optional_named = parser_argoexp.add_argument_group(
+        "Optional named arguments")
+    optional_named.add_argument(
+        "--lat", help="Latitude", type=float, default=None)
+    optional_named.add_argument(
+        "--lon", help="Longitude", type=float, default=None)
     optional_named.add_argument(
         "--radius", help="Search radius in meters for square buffer", default=None
     )
-    optional_named.add_argument("--start", help="Start Date YYYY-MM-DD", default=None)
-    optional_named.add_argument("--end", help="End Date YYYY-MM-DD", default=None)
-    optional_named.add_argument("--plid", help="Platform Profile ID", default=None)
+    optional_named.add_argument(
+        "--start", help="Start Date YYYY-MM-DD", default=None)
+    optional_named.add_argument(
+        "--end", help="End Date YYYY-MM-DD", default=None)
+    optional_named.add_argument(
+        "--plid", help="Platform Profile ID", default=None)
     optional_named.add_argument(
         "--geometry", help="Full path to geometry.geojson file", default=None
     )

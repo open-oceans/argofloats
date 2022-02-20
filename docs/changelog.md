@@ -1,5 +1,9 @@
 # Changelog
 
+#### v0.0.7
+- added BGC export for profiles apart from core export
+- added Global search capability for quick filter and export using keywords
+
 #### v0.0.6
 - Improved error handling
 - Better readout if search yields nothing

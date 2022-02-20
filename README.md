@@ -56,6 +56,7 @@ Readme Docs [available online](https://samapriya.github.io/argofloats)
     * [overview](#overview)
     * [Platform Metadata](#platform-metadata)
     * [Profile Metadata](#profile-metadata)
+    * [Global Search](#global-search)
     * [Platform Profiles](#platform-profiles)
     * [Profile Export](#profile-export)
 
@@ -120,19 +121,19 @@ As usual, to print help:
 
 ```
 argofloats -h
-usage: argofloats [-h] {overview,pm,plm,platform-profiles,profile-export} ...
+usage: argofloats [-h] {readme,overview,pm,plm,global-search,platform-profiles,profile-export} ...
 
 Simple CLI for ArgoVis & Argofloats
 
 positional arguments:
-  {readme,overview,pm,plm,platform-profiles,profile-export}
+  {readme,overview,pm,plm,global-search,platform-profiles,profile-export}
     readme              Go the web based porder readme page
     overview            Get overview of platforms and profiles
     pm                  Get Platform metadata
     plm                 Get Platform Profile metadata
+    global-search       Global search reports using platform, profile or BGC type
     platform-profiles   Export all profiles for a given platform
-    profile-export      Export profile based on Platform Profile ID, Lat, Long
-                        or Geometry GeoJSON file
+    profile-export      Export profile based on Platform Profile ID, Lat, Long or Geometry GeoJSON file
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -158,6 +159,19 @@ The tool fetches metadata about a platform as pretty prints the information as a
 Each platform consists of profiles where each profile is attached to a platform and is a single cycle of data collection. So platforms can have multiple profiles and generally represented as PlatformID_ProfileNo. This is the argument used by the tool and it pulls the metadata for that specific profile for that platform/argo float.
 
 ![argofloats_plm](https://user-images.githubusercontent.com/6677629/149610501-18fb7d24-e1d5-4aa3-a6d3-0164a845c26b.gif)
+
+### Global Search
+The global search tool was created to look for quick snapshots of all platforms and platforms in a single month. The tool allows you to provide a start and end date and it generates monthly reports pertaining to profiles that are globally available for a specific month and year. The tool can further use filters like setting bgc to True to get only those profiles/platforms that has BGC data or providing a specific platform ID to get only those profiles pertaining to specific platform.
+
+You can provide a filter for example here bgc is set to true to look for all those platforms & profiles with BGC data
+
+![argofloats_global_search](https://user-images.githubusercontent.com/6677629/154848970-542c6208-26f0-4906-925f-28a59c78239f.gif)
+
+
+You can also search with no arguments or filters to get all profiles in a month and year
+
+![argofloats_global_search_all](https://user-images.githubusercontent.com/6677629/154849132-5cad42d6-3a20-4f62-8f67-d3aa7e828a78.gif)
+
 
 ### Platform Profiles
 Each platform consists of profiles where each profile is attached to a platform and is a single cycle of data collection. So platforms can have multiple profiles and generally represented as PlatformID_ProfileNo. This tool fetches all platforms linked to a specific platform and exports it as a single CSV including platform profile id and measurements. If no path is provided the profile CSV is saved onto the home folder.

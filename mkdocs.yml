@@ -101,6 +101,7 @@ nav:
     - Platform metadata: projects/platform.md
     - Profile metadata: projects/profile.md
   - Data Export:
+    - Global search: projects/global_search.md
     - Platform Profiles Export: projects/platform_profiles.md
     - Profile Export: projects/profile_export.md
   - Changelog: changelog.md
