@@ -1,20 +1,21 @@
-import pandas as pd
-import json
-import requests
-import geojson
-import sys
-import pkg_resources
-import subprocess
-import platform
-import os
-import time
-import math
 import argparse
+import json
+import math
+import os
+import platform
+import subprocess
+import sys
+import time
 import webbrowser
-from area import area
 from os.path import expanduser
-from tenacity import retry, stop_after_attempt, wait_exponential
+
+import geojson
+import pandas as pd
+import pkg_resources
+import requests
+from area import area
 from bs4 import BeautifulSoup
+from tenacity import retry, stop_after_attempt, wait_exponential
 
 if str(platform.system().lower()) == "windows":
     # Get python runtime version
@@ -109,6 +110,8 @@ class Solution:
 ob1 = Solution()
 
 # Get package version
+
+
 def argofloats_version():
     url = "https://pypi.org/project/argofloats/"
     source = requests.get(url)
@@ -228,7 +231,66 @@ def generate_buffer_meter(lat, lng, radius):
     return coord
 
 
+######################### Global profile searches #################################################################
+
+
+def get_monthly_profile_pos(month, year):
+    url = f"https://argovis.colorado.edu/selection/profiles/{month}/{year}"
+    resp = requests.get(url)
+    if resp.status_code != 200:
+        return f"Error: Unexpected response {resp}"
+    monthlyProfilePos = resp.json()
+    return monthlyProfilePos
+
+
+def parse_meta_into_df(profiles):
+    # initialize dict
+    df = pd.DataFrame(profiles)
+    if df.shape[0] == 0:
+        return "error: no dataframes"
+    return df
+
+
+def global_profiles(fpath, start, end, pid, bgc):
+    key_list = {"pid": "platform_number", "bgc": "containsBGC"}
+    if pid is not None:
+        key = "pid"
+        value = int(pid)
+    elif bgc is not None:
+        key = "bgc"
+        value = bool(bgc)
+    if key in key_list:
+        keyword = key_list[key]
+    else:
+        sys.exit(f"Key {key} not found")
+
+    start = "-".join(start.split("-")[0:2])
+    end = "-".join(end.split("-")[0:2])
+    periods = list(pd.period_range(start, end, freq="M").strftime("%Y-%m"))
+    for period in periods:
+        print(f"Searching globally within {period} for {keyword}:{value}")
+        month = int(str(period).split("-")[1])
+        year = int(str(period).split("-")[0])
+        metaProfiles = get_monthly_profile_pos(month, year)
+        metaDf = parse_meta_into_df(metaProfiles)
+        dict = {"lat": "latitude", "lon": "longitude"}
+        metaDf.rename(columns=dict, inplace=True)
+        metaDf_sorted = metaDf.loc[metaDf[keyword] == value]
+        filepath = os.path.join(fpath, f"global_{year}_{month}_{keyword}-{value}.csv")
+        if metaDf_sorted.size > 0:
+            print(f"Exporting global search within {period} to {filepath}")
+            metaDf_sorted.to_csv(filepath, index=False)
+
+
+def global_profiles_from_parser(args):
+    global_profiles(
+        start=args.start, end=args.end, bgc=args.bgc, pid=args.pid, fpath=args.path
+    )
+
+
 ######################### Profile Map find all profile ids for give aoi and time ################################
+
+
 @retry(wait=wait_exponential(multiplier=1, min=4, max=10), stop=stop_after_attempt(4))
 def profile_id(params):
     response = requests.get(
@@ -246,8 +308,35 @@ def profile_id(params):
 
 ######################### Profile measurements and exporter ################################
 @retry(wait=wait_exponential(multiplier=1, min=4, max=10), stop=stop_after_attempt(2))
+def profiler_bgc(plid, fpath):
+    filepath = os.path.join(fpath, f"argoprofile_bgc_{plid}.csv")
+    if not os.path.exists(filepath):
+        pf = requests.get(f"https://argovis.colorado.edu/catalog/profiles/{plid}")
+        if pf.status_code == 200:
+            profile = pf.json()
+            bgc_keys = profile["bgcMeas"][0].keys()
+            df_bgc = pd.DataFrame(columns=bgc_keys)
+            profileDf = pd.DataFrame(profile["bgcMeas"])
+            profileDf["cycle_number"] = profile["cycle_number"]
+            profileDf["profile_id"] = profile["_id"]
+            profileDf["latitude"] = profile["lat"]
+            profileDf["longitude"] = profile["lon"]
+            profileDf["date"] = profile["date"]
+            df_bgc = pd.concat([df_bgc, profileDf], sort=False)
+            try:
+                print(f"Exporting bgc profile to {filepath}")
+                df_bgc.to_csv(filepath, index=False)
+            except Exception as e:
+                print(e)
+        elif response.status_code != 200:
+            raise Exception
+    else:
+        print(f"File already exists SKIPPING: {os.path.basename(filepath)}")
+
+
+@retry(wait=wait_exponential(multiplier=1, min=4, max=10), stop=stop_after_attempt(2))
 def profiler(plid, fpath):
-    filepath = os.path.join(fpath, f"argoprofile_{plid}.csv")
+    filepath = os.path.join(fpath, f"argoprofile_core_{plid}.csv")
     if not os.path.exists(filepath):
         pf = requests.get(f"https://argovis.colorado.edu/catalog/profiles/{plid}")
         if pf.status_code == 200:
@@ -262,7 +351,7 @@ def profiler(plid, fpath):
             profileDf["date"] = profile["date"]
             df = pd.concat([df, profileDf], sort=False)
             try:
-                print(f"Exporting to {filepath}")
+                print(f"Exporting core profile to {filepath}")
                 df.to_csv(filepath, index=False)
             except Exception as e:
                 print(e)
@@ -306,8 +395,8 @@ def platform2profiles(pid, fpath):
     platform_counts = pidf["profile_id"].nunique()
     print(f"Total unique profiles: {platform_counts}")
     print(f"Total measurements: {pidf.shape[0]}")
-    filepath = os.path.join(fpath, f"all_profiles-{pid}.csv")
-    print(f"Exporting to {filepath}")
+    filepath = os.path.join(fpath, f"all_profiles_core-{pid}.csv")
+    print(f"Exporting core profile to {filepath}")
     pidf.to_csv(filepath, index=False)
 
 
@@ -329,12 +418,40 @@ def overview_from_parser(args):
     overview()
 
 
+# BGC parameter list
+bgc_paramerters = {
+    "psal": "Salinity (psu)",
+    "bbp700": "Particle backscattering at 700nm (1/m)",
+    "doxy": "Dissolved oxygen (micromole/kg)",
+    "ph": "pH in situ total",
+    "chla": "Chlorophyll-A (mg/m3)",
+    "pres": "Pressure (dbar)",
+    "nitrate": "Nitrate (micromole/kg)",
+    "temp": "Temperature (celcius)",
+    "down_irradiance443": "Downwelling irradiance at 443nm (W/m^2/nm)",
+    "down_irradiance412": "Downwelling irradiance at 412nm (W/m^2/nm)",
+    "down_irradiance490": "Downwelling irradiance at 490nm (W/m^2/nm)",
+    "cdom": "Concentration of colored dissolved organic matter in sea water (ppb)",
+    "downwelling_par": "Downwelling photosynthetically available radiation (uMol Quanta/m^2/sec)",
+}
+
+
 def platform_metadata(pid):
     response = requests.get(
         f"https://argovis.colorado.edu/catalog/platform_metadata/{pid}", headers=headers
     )
     if response.status_code == 200:
         print(json.dumps(response.json(), indent=2))
+        """Check to see if profile is BGC and get BGC keys"""
+        platform_url = f"https://argovis.colorado.edu/catalog/platforms/{pid}"
+        resp = requests.get(platform_url)
+        if resp.status_code == 200 and resp.json()[0].get("containsBGC") == True:
+            print("\n" + "Profile contains BGC data with parameters" + "\n")
+            for key in resp.json()[0].get("bgcMeasKeys"):
+                if bgc_paramerters.get(key):
+                    print(f"{key} : {bgc_paramerters[key]}")
+                else:
+                    print(key)
     else:
         print(f"Failed with error code {response.status_code}")
 
@@ -366,8 +483,18 @@ def argoexp(lat, lng, radius, start, end, geometry, fpath, plid):
         ar = "{:,}".format(ar)
         print(f"Processing {os.path.basename(geometry)} with area {ar} square km")
     elif plid is not None:
+        print(f"Processing for Platform Profile ID {plid}" + "\n")
         profiler(plid, fpath)
-        print(f"Processing for Platform Profile ID {plid}")
+        """Check to see if profile is BGC and get BGC keys"""
+        platform_url = (
+            f"https://argovis.colorado.edu/catalog/platforms/{plid.split('_')[0]}"
+        )
+        resp = requests.get(platform_url)
+        if resp.status_code == 200 and resp.json()[0].get("containsBGC") == True:
+            print(
+                "BGC profile found for argofloats creating BGC platform profile export"
+            )
+            profiler_bgc(plid, fpath)
     elif lat is not None and lng is not None:
         if radius is None:
             radius = 1000000
@@ -392,7 +519,25 @@ def argoexp(lat, lng, radius, start, end, geometry, fpath, plid):
             profile_id(params)
         if profile_list:
             for plid in profile_list:
-                profiler(plid, fpath)
+                try:
+                    profiler(plid, fpath)
+                except tenacity.RetryError as e:
+                    print(f"Retry failed for Core Platform Profile: with ID {plid}")
+
+                """Check to see if profile is BGC and get BGC keys"""
+                platform_url = f"https://argovis.colorado.edu/catalog/platforms/{plid.split('_')[0]}"
+                resp = requests.get(platform_url)
+                if (
+                    resp.status_code == 200
+                    and resp.json()[0].get("containsBGC") == True
+                ):
+                    print(
+                        "BGC profile found for argofloats creating BGC platform profile export"
+                    )
+                    try:
+                        profiler_bgc(plid, fpath)
+                    except tenacity.RetryError as e:
+                        print(f"Retry failed for BGC Platform Profile: with ID {plid}")
         else:
             print("\n" + "No matching profiles found for query")
     if plid is None and start is None and end is None:
@@ -435,6 +580,37 @@ def main(args=None):
     required_named = parser_plm.add_argument_group("Required named arguments.")
     required_named.add_argument("--plid", help="Platform Profile ID", required=True)
     parser_plm.set_defaults(func=plm_from_parser)
+
+    parser_global_profiles = subparsers.add_parser(
+        "global-search",
+        help="Global search reports using platform, profile or BGC type",
+    )
+    required_named = parser_global_profiles.add_argument_group(
+        "Required named arguments."
+    )
+    required_named.add_argument(
+        "--start", help="Start date for global search YYYY-MM-DD", required=True
+    )
+    required_named.add_argument(
+        "--end", help="End date for global search YYYY-MM-DD", required=True
+    )
+    required_named.add_argument(
+        "--path", help="Full path to folder to export global search CSVs", required=True
+    )
+    optional_named = parser_global_profiles.add_argument_group(
+        "Optional named arguments"
+    )
+    optional_named.add_argument(
+        "--pid",
+        help="Platform ID: search and export all global profiles for specific platform ID",
+        default=None,
+    )
+    optional_named.add_argument(
+        "--bgc",
+        help="Boolean: search and export all global profiles with BGC True or False",
+        default=None,
+    )
+    parser_global_profiles.set_defaults(func=global_profiles_from_parser)
 
     parser_platform2profiles = subparsers.add_parser(
         "platform-profiles", help="Export all profiles for a given platform"

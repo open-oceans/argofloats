@@ -1,11 +1,11 @@
-import sys
 import os
 import sys
+from distutils.version import StrictVersion
+
 import setuptools
+from setuptools import __version__ as setuptools_version
 from setuptools import find_packages
 from setuptools.command.test import test as TestCommand
-from distutils.version import StrictVersion
-from setuptools import __version__ as setuptools_version
 
 if StrictVersion(setuptools_version) < StrictVersion('38.3.0'):
     raise SystemExit(
@@ -18,9 +18,11 @@ if StrictVersion(setuptools_version) < StrictVersion('38.3.0'):
 def readme():
     with open('README.md') as f:
         return f.read()
+
+
 setuptools.setup(
     name='argofloats',
-    version='0.0.6',
+    version='0.0.7',
     packages=['argofloats'],
     url='https://github.com/samapriya/argofloats',
     install_requires=['requests>=2.24.0',
